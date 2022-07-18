@@ -1,0 +1,79 @@
+version: "3"
+services:
+  dsyslog:
+    image: jcm2582/rsyslog:1.0
+    networks: 
+      syslog:
+        ipv4_address: 10.1.10.2
+    volumes:
+      - state:/var/log/dataset
+      - checkpoint:/var/lib/scalyr-agent2
+     # - ./config/rsyslog/rsyslog.conf:/etc/rsyslog.conf
+      - ./config/logs.json:/etc/scalyr-agent-2/agent.d/logs.json
+      - ./config/default_api_key.json:/etc/scalyr-agent-2/agent.d/default_api_key.json
+    ports: 
+      - 0.0.0.0:514:514/udp
+      - 0.0.0.0:514:514/tcp
+  nginx:
+    image: nginx:latest
+    networks:
+      syslog:
+        ipv4_address: 10.1.10.10
+    container_name: production_nginx
+    volumes:
+      - ./config/nginx/reverse_proxy.conf:/etc/nginx/nginx.conf
+#     - ./config/nginx/cert/star_xx_com.pem:/etc/nginx/cert/star_xx_com.pem
+#     - ./config/nginx/cert/star_xx_com.key:/etc/nginx/cert/star_xx_com.key
+#     - ./config/nginx/cert/star_xx_com.crt:/etc/nginx/cert/star_xx_com.crt
+    ports:
+      - 0.0.0.0:6514:514/udp
+      - 0.0.0.0:6514:514/tcp
+    expose: 
+      - 514
+      - 6514
+    links:
+      - dsyslog
+    command: [nginx-debug, '-g', 'daemon off;']
+
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:6.4.0
+    user: root
+    ports:
+      - 9200:9200
+      - 0.0.0.0:60:601/tcp
+      - 0.0.0.0:601:601/udp
+    command: logstash -f /etc/logstash/conf.d/logstash.conf
+    volumes:
+      - state:/var/log/dataset
+      - ./config/logstash/logstash.conf:/etc/logstash/conf.d/logstash.conf
+    networks:
+      syslog:
+        ipv4_address: 10.1.10.3
+
+
+  scalyr-agent:
+    image: scalyr/scalyr-agent-docker-json
+    user: root
+    environment:
+      SCALYR_API_KEY: ""
+      SCALYR_LABELS_AS_ATTRIBUTES: "true"
+      SCALYR_IMPLICIT_METRIC_MONITOR: "false"
+      SCALYR_IMPLICIT_AGENT_PROCESS_METRICS_MONITOR: "false"
+      SCALYR_REPORT_CONTAINER_METRICS: "false"
+    volumes:
+      - /var/run/docker.sock:/var/scalyr/docker.sock 
+      - /var/lib/docker/containers:/var/lib/docker/containers
+    command: scalyr-agent-2 status -v
+
+volumes:
+  state:
+  checkpoint:
+
+networks:
+  syslog:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.1.10.0/24
+         gateway: 10.1.10.1
