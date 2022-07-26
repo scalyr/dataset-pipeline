@@ -5,15 +5,22 @@ services:
     networks: 
       syslog:
         ipv4_address: 10.1.10.2
+    user: root
+    environment:
+      SCALYR_API_KEY: "your-key-here"
+      SCALYR_SERVER: "https://app.eu.scalyr.com"
     volumes:
       - state:/var/log/dataset
-      - checkpoint:/var/lib/scalyr-agent2
-     # - ./config/rsyslog/rsyslog.conf:/etc/rsyslog.conf
+      - checkpoint:/var/lib/scalyr-agent-2
+      - ./config/agent.json:/etc/scalyr-agent-2/agent.json
+      - ./config/rsyslog/rsyslog.conf:/etc/rsyslog.conf
+     # - ./config/rsyslog/rsyslog.d:/etc/rsyslog.d  
       - ./config/logs.json:/etc/scalyr-agent-2/agent.d/logs.json
       - ./config/default_api_key.json:/etc/scalyr-agent-2/agent.d/default_api_key.json
     ports: 
       - 0.0.0.0:514:514/udp
       - 0.0.0.0:514:514/tcp
+    command: ["sudo service rsyslog restart"]    
   nginx:
     image: nginx:latest
     networks:
@@ -22,12 +29,21 @@ services:
     container_name: production_nginx
     volumes:
       - ./config/nginx/reverse_proxy.conf:/etc/nginx/nginx.conf
-#     - ./config/nginx/cert/star_xx_com.pem:/etc/nginx/cert/star_xx_com.pem
-#     - ./config/nginx/cert/star_xx_com.key:/etc/nginx/cert/star_xx_com.key
-#     - ./config/nginx/cert/star_xx_com.crt:/etc/nginx/cert/star_xx_com.crt
+      - ./config/nginx/cert/ca.pem:/etc/nginx/cert/ca.pem
+      - ./config/nginx/cert/ca.key:/etc/nginx/cert/ca.key
+      - ./config/nginx/cert/scalyr/ca_certs.crt:/etc/nginx/cert/ca_certs.crt
+   # ports:
+   #   - 0.0.0.0:6514:514/udp
+   #   - 0.0.0.0:6514:514/tcp
     ports:
-      - 0.0.0.0:6514:514/udp
-      - 0.0.0.0:6514:514/tcp
+      - target: 514
+        published: 6514
+        mode: host
+        protocol: tcp
+      - target: 514
+        published: 6514
+        mode: host 
+        protocol: udp       
     expose: 
       - 514
       - 6514
@@ -35,6 +51,16 @@ services:
       - dsyslog
     command: [nginx-debug, '-g', 'daemon off;']
 
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    # command: caddy reverse-proxy --from intus1-skytap-proxy.scalyr.com --to https://app.intus1.scalyr.com --change-host-header
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
 
   logstash:
     image: docker.elastic.co/logstash/logstash:6.4.0
@@ -43,6 +69,7 @@ services:
       - 9200:9200
       - 0.0.0.0:60:601/tcp
       - 0.0.0.0:601:601/udp
+      - 0.0.0.0:5044:5044
     command: logstash -f /etc/logstash/conf.d/logstash.conf
     volumes:
       - state:/var/log/dataset
@@ -69,6 +96,7 @@ services:
 volumes:
   state:
   checkpoint:
+  caddy_data:
 
 networks:
   syslog:

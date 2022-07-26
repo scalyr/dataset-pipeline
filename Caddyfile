@@ -1,0 +1,19 @@
+{
+  #debug
+  admin off
+#  log {
+#    output stdout
+#    level DEBUG
+#    format console
+#    include http.handlers.reverse_proxy
+#  }
+}
+intus1-skytap-proxy.scalyr.com {
+  reverse_proxy https://app.intus1.scalyr.com {
+    header_up Host app.intus1.scalyr.com
+  }
+  log {
+    output stderr
+    format console
+  }
+}
