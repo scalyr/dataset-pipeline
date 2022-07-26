@@ -10,7 +10,7 @@ Rsyslog Dataset Agent and Loadbalancer
 1. VM running Ubuntu 
 - Create one in your cloud's UI or CLI 
 - Or use one of the startup scripts
-([Azure](https://github.com/jmorascalyr/Dataset-Syslog/blob/azure/az-vm-create.sh))
+([Azure](https://github.com/jmorascalyr/Dataset-Syslog/blob/azure/az-vm-create.sh),[AWS](https://github.com/jmorascalyr/Dataset-Syslog/blob/main/ec2-startup.sh))
 
 
 2. Docker on the VM 
