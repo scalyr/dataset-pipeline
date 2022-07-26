@@ -14,4 +14,4 @@ sudo mkdir GitHub
 cd GitHub
 sudo git clone https://github.com/jmorascalyr/Dataset-Syslog.git
 cd Dataset-Syslog
-sudo docker-compose up -d
+#sudo docker-compose up -d
