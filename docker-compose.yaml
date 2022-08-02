@@ -7,7 +7,7 @@ services:
         ipv4_address: 10.1.10.2
     user: root
     environment:
-      SCALYR_API_KEY: "0NAapLED_G1uthciwlXPJShHZiDQs6U2Mfi1nbpaTqpo-"
+      SCALYR_API_KEY: "your-key-here"
       SCALYR_SERVER: "https://agent.scalyr.com"
     volumes:
       - state:/var/log/dataset
