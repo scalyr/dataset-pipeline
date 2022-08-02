@@ -1,17 +1,19 @@
 version: "3"
 services:
   dsyslog:
-    image: jcm2582/rsyslog:1.0
+    build: .
     networks: 
       syslog:
         ipv4_address: 10.1.10.2
     user: root
     environment:
-      SCALYR_API_KEY: "your-key-here"
-      SCALYR_SERVER: "https://app.eu.scalyr.com"
+      SCALYR_API_KEY: "0NAapLED_G1uthciwlXPJShHZiDQs6U2Mfi1nbpaTqpo-"
+      SCALYR_SERVER: "https://agent.scalyr.com"
     volumes:
       - state:/var/log/dataset
       - checkpoint:/var/lib/scalyr-agent-2
+      - ./config/logrotate/logrotate.d:/etc/logrotate.d
+      - ./config/logrotate/logrotate.conf:/etc/logrotate.conf 
       - ./config/agent.json:/etc/scalyr-agent-2/agent.json
       - ./config/rsyslog/rsyslog.conf:/etc/rsyslog.conf
      # - ./config/rsyslog/rsyslog.d:/etc/rsyslog.d  
@@ -20,7 +22,7 @@ services:
     ports: 
       - 0.0.0.0:514:514/udp
       - 0.0.0.0:514:514/tcp
-    command: ["sudo service rsyslog restart"]    
+    command: ["sudo service rsyslog restart; logrotate /etc/logrotate.conf"]    
   nginx:
     image: nginx:latest
     networks:
@@ -49,7 +51,6 @@ services:
       - 6514
     links:
       - dsyslog
-    command: [nginx-debug, '-g', 'daemon off;']
 
   caddy:
     image: caddy:2-alpine
@@ -77,21 +78,6 @@ services:
     networks:
       syslog:
         ipv4_address: 10.1.10.3
-
-
-  scalyr-agent:
-    image: scalyr/scalyr-agent-docker-json
-    user: root
-    environment:
-      SCALYR_API_KEY: ""
-      SCALYR_LABELS_AS_ATTRIBUTES: "true"
-      SCALYR_IMPLICIT_METRIC_MONITOR: "false"
-      SCALYR_IMPLICIT_AGENT_PROCESS_METRICS_MONITOR: "false"
-      SCALYR_REPORT_CONTAINER_METRICS: "false"
-    volumes:
-      - /var/run/docker.sock:/var/scalyr/docker.sock 
-      - /var/lib/docker/containers:/var/lib/docker/containers
-    command: scalyr-agent-2 status -v
 
 volumes:
   state:
