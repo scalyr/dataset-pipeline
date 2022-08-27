@@ -18,26 +18,34 @@ services:
       - 0.0.0.0:514:514/udp
       - 0.0.0.0:514:514/tcp
     command: ["sudo service rsyslog restart"]    
-  dataset:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    networks:
-      syslog:
-        ipv4_address: 10.1.10.3
-    user: root
+#  dataset:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile-dataset
+#    user: root
+#    environment:
+#      - SCALYR_API_KEY=${DATASET_API_KEY}
+#      - SCALYR_SERVER=https://app.scalyr.com
+#    volumes:
+#      - state:/var/log/dataset
+#      - checkpoint:/var/lib/scalyr-agent-2
+#      - ./config/logrotate/logrotate.d:/etc/logrotate.d
+#      - ./config/logrotate/logrotate.conf:/etc/logrotate.conf
+#      - ./config/agent.json:/etc/scalyr-agent-2/agent.json
+#      - ./config/logs.json:/etc/scalyr-agent-2/agent.d/logs.json
+#      - ./config/default_api_key.json:/etc/scalyr-agent-2/agent.d/default_api_key.json
+#    command: ["scalyr-agent-2 start"]
+  scalyr:
+    image: scalyr/scalyr-agent-docker-json:latest
     environment:
-      - SCALYR_API_KEY=${DATASET_API_KEY}
-      - SCALYR_SERVER=https://agent.scalyr.com
+       - SCALYR_API_KEY=${DATASET_API_KEY}
+       - SCALYR_SERVER=https://app.scalyr.com
     volumes:
-      - state:/var/log/dataset
-      - checkpoint:/var/lib/scalyr-agent-2
-      - ./config/logrotate/logrotate.d:/etc/logrotate.d
-      - ./config/logrotate/logrotate.conf:/etc/logrotate.conf
-      - ./config/agent.json:/etc/scalyr-agent-2/agent.json
-      - ./config/logs.json:/etc/scalyr-agent-2/agent.d/logs.json
-      - ./config/default_api_key.json:/etc/scalyr-agent-2/agent.d/default_api_key.json
-    command: ["logrotate /etc/logrotate.conf"]
+      - "/var/run/docker.sock:/var/scalyr/docker.sock"
+      - "/var/lib/docker/containers:/var/lib/docker/containers"
+      - "./config/logs.json:/etc/scalyr-agent-2/agent.d/logs.json"
+      - "state:/var/log/dataset"
+      - "checkpoint:/var/lib/scalyr-agent-2"
   nginx:
     image: nginx:latest
     networks:

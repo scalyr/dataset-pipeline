@@ -12,6 +12,13 @@ address = "0.0.0.0:80"
 encoding = "text"
 
 
+[sources.file]
+  # REQUIRED - General
+  type = "file" # must be: "file"
+  include = ["/var/log/foo/*.log"] # example
+
+
+
 [sources.demo]
 type = "demo_logs"
 format = "syslog"
@@ -34,13 +41,11 @@ target = "geoip"
 
 
 [transforms.parse]
-inputs = [ "syslog-tcp", "syslog-udp"]
-type = "remap"
-source = '''
+  # REQUIRED
+  type = "json_parser" 
+  inputs = ["file"]
+  drop_invalid = false 
 
-. = parse_json!(string!(.message))
-
-'''
 
 [sinks.file-persist-generator]
 type = "file"
@@ -53,7 +58,7 @@ path = "/var/log/dataset/vector/generator/%d/%Y-%m-%d-%H.log"
 
 [sinks.file-persist-syslog]
 type = "file"
-inputs = [ "syslog-tcp", "syslog-udp", "http" ]
+inputs = [ "syslog-tcp", "syslog-udp", "enrich" ]
 compression = "none"
 path = "/var/log/dataset/vector/syslog/%d/%Y-%m-%d-%H.log"
 
