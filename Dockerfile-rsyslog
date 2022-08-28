@@ -1,5 +1,5 @@
 FROM ubuntu
-RUN apt update && apt install rsyslog curl python3 -y
+RUN apt update && apt install logrotate rsyslog curl python3 -y
 RUN echo '$ModLoad imudp \n\
 $UDPServerRun 514 \n\
 $ModLoad imtcp \n\

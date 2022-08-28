@@ -11,13 +11,15 @@ services:
     volumes:
      # - state:/var/log/dataset
       - ./config/rsyslog/rsyslog.conf:/etc/rsyslog.conf
-     # - ../../config/rsyslog/rsyslog.d:/etc/rsyslog.d  
+      - ./config/rsyslog/rsyslog.d:/etc/rsyslog.d 
+      - ./config/logrotate/logrotate.conf:/etc/logrotate.conf
+      - ./config/logrotate/logrotate.d/dataset.conf:/etc/logrotate.d/dataset.conf
     links:
       - vector
     ports: 
       - 0.0.0.0:514:514/udp
       - 0.0.0.0:514:514/tcp
-    command: ["sudo service rsyslog restart"]    
+    command: ["sudo service rsyslog restart; sudo logrotate /etc/logrotate.conf"]    
 #  dataset:
 #    build:
 #      context: .
