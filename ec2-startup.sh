@@ -1,5 +1,5 @@
 sudo yum update -y
-sudo yum install docker -y
+sudo yum install docker git -y
 sudo usermod -a -G docker ec2-user
 id ec2-user
 newgrp docker
@@ -11,5 +11,5 @@ sudo mkdir GitHub
 cd GitHub
 sudo git clone https://github.com/jmorascalyr/Dataset-Syslog.git
 cd Dataset-Syslog
-sudo git checkout proxy
+sudo git checkout vector
 sudo docker-compose up -d

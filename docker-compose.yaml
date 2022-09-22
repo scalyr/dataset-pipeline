@@ -1,28 +1,71 @@
-version: "3"
+version: "3.3"
 services:
-  dsyslog:
-    build: .
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.4.2
+    labels: 
+      - com.scalyr.config.log.parser=okta-filebeat
+    volumes: 
+      - ./config/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:rw
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - state:/var/log/dataset 
+    user: root
+    command: ["--strict.perms=false"]
+    depends_on: 
+      - scalyr
+      - vector
+      - rsyslog
+    configs:
+      - source: fb_config
+        target: /usr/share/filebeat/filebeat.yml
+  rsyslog:
+    build:
+      context: . 
+      dockerfile: Dockerfile-rsyslog 
     networks: 
       syslog:
         ipv4_address: 10.1.10.2
     user: root
-    environment:
-      SCALYR_API_KEY: "your-key-here"
-      SCALYR_SERVER: "https://agent.scalyr.com"
     volumes:
-      - state:/var/log/dataset
-      - checkpoint:/var/lib/scalyr-agent-2
-      - ./config/logrotate/logrotate.d:/etc/logrotate.d
-      - ./config/logrotate/logrotate.conf:/etc/logrotate.conf 
-      - ./config/agent.json:/etc/scalyr-agent-2/agent.json
+     # - state:/var/log/dataset
       - ./config/rsyslog/rsyslog.conf:/etc/rsyslog.conf
-     # - ./config/rsyslog/rsyslog.d:/etc/rsyslog.d  
-      - ./config/logs.json:/etc/scalyr-agent-2/agent.d/logs.json
-      - ./config/default_api_key.json:/etc/scalyr-agent-2/agent.d/default_api_key.json
+      - ./config/rsyslog/rsyslog.d:/etc/rsyslog.d 
+      - ./config/logrotate/logrotate.conf:/etc/logrotate.conf
+      - ./config/logrotate/logrotate.d/dataset.conf:/etc/logrotate.d/dataset.conf
+    links:
+      - vector
     ports: 
       - 0.0.0.0:514:514/udp
       - 0.0.0.0:514:514/tcp
-    command: ["sudo service rsyslog restart; logrotate /etc/logrotate.conf"]    
+    command: ["sudo service rsyslog restart; sudo logrotate /etc/logrotate.conf"]    
+#  dataset:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile-dataset
+#    user: root
+#    environment:
+#      - SCALYR_API_KEY=${DATASET_API_KEY}
+#      - SCALYR_SERVER=https://app.scalyr.com
+#    volumes:
+#      - state:/var/log/dataset
+#      - checkpoint:/var/lib/scalyr-agent-2
+#      - ./config/logrotate/logrotate.d:/etc/logrotate.d
+#      - ./config/logrotate/logrotate.conf:/etc/logrotate.conf
+#      - ./config/agent.json:/etc/scalyr-agent-2/agent.json
+#      - ./config/logs.json:/etc/scalyr-agent-2/agent.d/logs.json
+#      - ./config/default_api_key.json:/etc/scalyr-agent-2/agent.d/default_api_key.json
+#    command: ["scalyr-agent-2 start"]
+  scalyr:
+    image: scalyr/scalyr-agent-docker-json:latest
+    environment:
+       - SCALYR_API_KEY=${DATASET_API_KEY}
+       - SCALYR_SERVER=https://app.scalyr.com
+    volumes:
+      - "/var/run/docker.sock:/var/scalyr/docker.sock"
+      - "/var/lib/docker/containers:/var/lib/docker/containers"
+      - "./config/logs.json:/etc/scalyr-agent-2/agent.d/logs.json"
+      - "state:/var/log/dataset"
+      - "checkpoint:/var/lib/scalyr-agent-2"
   nginx:
     image: nginx:latest
     networks:
@@ -31,9 +74,9 @@ services:
     container_name: production_nginx
     volumes:
       - ./config/nginx/reverse_proxy.conf:/etc/nginx/nginx.conf
-      - ./config/nginx/cert/ca.pem:/etc/nginx/cert/ca.pem
-      - ./config/nginx/cert/ca.key:/etc/nginx/cert/ca.key
-      - ./config/nginx/cert/scalyr/ca_certs.crt:/etc/nginx/cert/ca_certs.crt
+   #   - ./config/nginx/cert/ca.pem:/etc/nginx/cert/ca.pem
+   #   - ./config/nginx/cert/ca.key:/etc/nginx/cert/ca.key
+   #   - ./config/nginx/cert/scalyr/ca_certs.crt:/etc/nginx/cert/ca_certs.crt
    # ports:
    #   - 0.0.0.0:6514:514/udp
    #   - 0.0.0.0:6514:514/tcp
@@ -45,39 +88,65 @@ services:
       - target: 514
         published: 6514
         mode: host 
+        protocol: udp
+      - target: 515
+        published: 6515
+        mode: host
+        protocol: tcp
+      - target: 515
+        published: 6515
+        mode: host
         protocol: udp       
     expose: 
       - 514
       - 6514
     links:
-      - dsyslog
+      - rsyslog
 
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
-    # command: caddy reverse-proxy --from intus1-skytap-proxy.scalyr.com --to https://app.intus1.scalyr.com --change-host-header
+    command: caddy reverse-proxy --from 0.0.0.0:443 --to 10.1.10.8:80
     ports:
       - "80:80"
       - "443:443"
+    networks: 
+      syslog: 
+        ipv4_address: 10.1.10.100
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
-
-  logstash:
-    image: docker.elastic.co/logstash/logstash:6.4.0
+  vector:
+    image: timberio/vector:0.23.3-debian
     user: root
-    ports:
-      - 9200:9200
-      - 0.0.0.0:60:601/tcp
-      - 0.0.0.0:601:601/udp
-      - 0.0.0.0:5044:5044
-    command: logstash -f /etc/logstash/conf.d/logstash.conf
+    ports: 
+      - 8080:80
+      - 4443:443
+      - 0.0.0.0:515:515/udp
+      - 0.0.0.0:515:515/tcp
     volumes:
-      - state:/var/log/dataset
-      - ./config/logstash/logstash.conf:/etc/logstash/conf.d/logstash.conf
+      - ./config/vector/vector.toml:/etc/vector/vector.toml
+      - ./config/vector/GeoLite.mmdb:/usr/share/vector/GeoLite.mmdb
+      - state:/var/log/dataset 
     networks:
       syslog:
-        ipv4_address: 10.1.10.3
+        ipv4_address: 10.1.10.8
+
+#  logstash:
+#    image: docker.elastic.co/logstash/logstash:6.4.0
+#    user: root
+#    ports:
+#      - 9200:9200
+#      - 0.0.0.0:60:601/tcp
+#      - 0.0.0.0:601:601/udp
+#      - 0.0.0.0:5044:5044
+#    command: logstash -f /etc/logstash/conf.d/logstash.conf
+#    volumes:
+#      - state:/var/log/dataset
+#      - ./config/logstash/logstash.conf:/etc/logstash/conf.d/logstash.conf
+#    networks:
+#      syslog:
+#        ipv4_address: 10.1.10.3
 
 volumes:
   state:

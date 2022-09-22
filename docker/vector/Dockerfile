@@ -1,0 +1,13 @@
+FROM timberio/vector:0.23.3-debian
+RUN apt update && apt install rsyslog curl python3 -y
+RUN echo '$ModLoad imudp \n\
+$UDPServerRun 515 \n\
+$ModLoad imtcp \n\
+$InputTCPServerRun 515 \n\
+$template RemoteStore, "/var/log/dataset/%HOSTNAME%/%$year%/%$Month%/%$Day%/%$Hour%/%SOURCE%.%FROMHOST%.%FROMHOST-IP%.%SYSLOGTAG%.log" \n\
+$template RFC3164fmt,"<%PRI%>%TIMESTAMP% %HOSTNAME% %syslogtag%%msg%" \n\
+:source, !isequal, "localhost" -?RemoteStore \n\
+:source, isequal, "last" ~ ' > /etc/rsyslog.conf
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN ["chmod", "+x", "/usr/local/bin/docker-entrypoint.sh"]
+ENTRYPOINT ["sh", "/usr/local/bin/docker-entrypoint.sh"]
