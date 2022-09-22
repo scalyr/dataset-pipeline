@@ -1,5 +1,23 @@
 version: "3.3"
 services:
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.4.2
+    environment: 
+      - com.scalyr.config.log.parser=okta-filebeat
+    volumes: 
+      - ./config/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:rw
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - state:/var/log/dataset 
+    user: root
+    command: ["--strict.perms=false"]
+    depends_on: 
+      - scalyr
+      - vector
+      - rsyslog
+    configs:
+      - source: fb_config
+        target: /usr/share/filebeat/filebeat.yml
   rsyslog:
     build:
       context: . 

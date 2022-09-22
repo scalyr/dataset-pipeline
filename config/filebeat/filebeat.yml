@@ -1,0 +1,15 @@
+filebeat.inputs:
+  - type: log 
+    enabled: true
+    paths:
+      - /home/playground/logs/test.log
+
+filebeat.modules:
+  - module: okta
+    enabled: true
+    system:
+       var.url: https://dev-80309314-admin.okta.com/api/v1/logs
+       var.api_key: '00B3-lTFc2Cyj77xqUGCupmWLl_zJvCrEDRk-dP5BE'
+
+output.console:
+  pretty: true
