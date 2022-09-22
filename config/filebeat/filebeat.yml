@@ -8,8 +8,8 @@ filebeat.modules:
   - module: okta
     enabled: true
     system:
-       var.url: https://dev-80309314-admin.okta.com/api/v1/logs
-       var.api_key: '00B3-lTFc2Cyj77xqUGCupmWLl_zJvCrEDRk-dP5BE'
+       var.url: ''
+       var.api_key: ''
 
 output.console:
   pretty: true
