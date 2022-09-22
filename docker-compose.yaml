@@ -2,7 +2,7 @@ version: "3.3"
 services:
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.4.2
-    environment: 
+    labels: 
       - com.scalyr.config.log.parser=okta-filebeat
     volumes: 
       - ./config/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:rw
