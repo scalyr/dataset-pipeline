@@ -24,7 +24,9 @@ Rsyslog Dataset Agent and Loadbalancer
 2. open  docker-compose.yaml. `sudo vim docker-compose.yaml` . 
 - add `https://agent.scalyr.com` to the SCALYR_SERVER field
 - add your api key to the SCALYR_API_KEY field
-3. `sudo docker-compose up -d`
+3. configure Vector `config/vector/vector.toml`
+4. Vector writes its data to a drive and the dataset agent picks up the data (sink coming soon) This is configured in `config/logs.json` and `config/vector/vector.toml`
+5. `sudo docker-compose up -d`
 
 ### Send Syslog Message
 1. Make sure the ports 80 (agent proxy), 443 (agent proxy), 6514 (syslog only) are open in your security group in your cloud and on the Ubuntu firewall 
