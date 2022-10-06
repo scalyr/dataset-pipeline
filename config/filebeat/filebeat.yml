@@ -1,0 +1,15 @@
+filebeat.inputs:
+  - type: log 
+    enabled: true
+    paths:
+      - /home/playground/logs/test.log
+
+filebeat.modules:
+  - module: okta
+    enabled: true
+    system:
+       var.url: ''
+       var.api_key: ''
+
+output.console:
+  pretty: true

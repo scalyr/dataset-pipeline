@@ -1,0 +1,6 @@
+{
+  logs: [
+       { path: "/var/log/dataset/rsyslog/**", attributes: {parser: "syslog"} }
+       { path: "/var/log/dataset/vector/**", attributes: {parser: "json"} } 
+  ]
+}

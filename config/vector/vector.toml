@@ -1,0 +1,64 @@
+[sources.syslog-tcp]
+type = "socket"
+address = "0.0.0.0:515"
+max_length = 102_400
+mode = "tcp"
+#path = "/var/log/messages"
+
+
+[sources.http]
+type = "http"
+address = "0.0.0.0:80"
+encoding = "text"
+
+
+#[sources.demo]
+#type = "demo_logs"
+#format = "syslog"
+
+
+[sources.syslog-udp]
+type = "socket"
+address = "0.0.0.0:515"
+max_length = 102_400
+mode = "udp"
+#path = "/var/log/messages"
+
+
+
+[transforms.parse]
+type = "remap"
+inputs = ["syslog-tcp", "syslog-udp"]
+source = '''
+
+. |= parse_regex!(.message, r'(?P<ip_address>[^\s]+) - (?P<username>[^\s]+)')
+
+
+'''
+
+[transforms.enrich]
+type = "geoip"
+inputs = [ "parse" ]
+database = "/usr/share/vector/GeoLite.mmdb"
+source = "ip_address"
+target = "geoip"
+
+
+
+#[sinks.file-persist-generator]
+#type = "file"
+#inputs = [ "demo" ]
+#compression = "none"
+#path = "/var/log/dataset/vector/generator/%d/%Y-%m-%d-%H.log"
+#
+#  [sinks.file-persist-generator.encoding]
+#  codec = "json"
+
+[sinks.file-persist-syslog]
+type = "file"
+inputs = [ "enrich" ]
+compression = "none"
+path = "/var/log/dataset/vector/syslog/%d/%Y-%m-%d-%H.log"
+
+  [sinks.file-persist-syslog.encoding]
+  codec = "json"

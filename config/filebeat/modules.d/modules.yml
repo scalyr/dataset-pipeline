@@ -1,0 +1,7 @@
+filebeat.modules:
+- module: threatintel
+  abuseurl:
+    enabled: true
+    var.input: httpjson
+    var.url: https://urlhaus-api.abuse.ch/v1/urls/recent/
+    var.interval: 60m
