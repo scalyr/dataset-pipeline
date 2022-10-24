@@ -1,4 +1,6 @@
 # Dataset-Pipeline Tool 
+This tool is a Beta Virtual Appliance. 
+
 This is a tool to bring various open source tools together and easily write to Dataset via the Docker Agent. 
 If any data is sent to the console of a container, the dataset agent will pick it up. 
 There is also more advaced persistence if you need to allow for spooling and backfilling of data and pushing to multiple dataset accounts. 
@@ -21,16 +23,26 @@ There is also more advaced persistence if you need to allow for spooling and bac
 
 ## VM 
 
-### Setup VM for Syslog
+### Setup VM for rSyslog
 1. `git clone  https://github.com/scalyr/dataset-pipeline.git; cd dataset-pipeline.git`
 2. open  docker-compose.yaml. `sudo vim docker-compose.yaml` . 
 - add `https://agent.scalyr.com` to the SCALYR_SERVER field
 - add your api key to the SCALYR_API_KEY field
 3. `sudo docker-compose up -d`
+4. Send messages to port 6514
+
+### Setup VM for vector
+1. `git clone  https://github.com/scalyr/dataset-pipeline.git; cd dataset-pipeline.git`
+2. open  docker-compose.yaml. `sudo vim docker-compose.yaml` . 
+- add `https://agent.scalyr.com` to the SCALYR_SERVER field
+- add your api key to the SCALYR_API_KEY field
+3. `sudo docker-compose up -d`
+4. Send messages to port 515 
+5. feel free to remove unnecessisary containers.
 
 ### Send Syslog Message
-1. Make sure the ports 80 (agent proxy), 443 (agent proxy), 6514 (syslog only) are open in your security group in your cloud and on the Ubuntu firewall 
-2. Send single message `nc -w0 -u my-ip-address-to-my-vm 6514 <<< "<134>Jul 26 00:00:54 1,2015/12/15 12:09:53,0003C102241,THREAT,url,8,2015/12/15 12:09:52,172.21.22.205,172.21.4.140,0.0.0.0,0.0.0.0,Admin_Inbound,,,ssl,vsys3,VAdmin-Building,VAdmin-ITConn,ethernet1/18,ethernet1/14,Syslog,2015/12/15 12:09:52,113357,1,4853,8080,0,0,0x0,tcp,alert,"secureinclude.ebaystatic.com/",(9999),auctions,informational,client-to-server"`
+1. Make sure the ports 80 (agent proxy), 443 (agent proxy), 6514 (syslog only), 515 (vector syslog) are open in your security group in your cloud and on the Ubuntu firewall 
+2. Send single message `nc -w0 -u my-ip-address port <<< "<134>Jul 26 00:00:54 1,2015/12/15 12:09:53,0003C102241,THREAT,url,8,2015/12/15 12:09:52,172.21.22.205,172.21.4.140,0.0.0.0,0.0.0.0,Admin_Inbound,,,ssl,vsys3,VAdmin-Building,VAdmin-ITConn,ethernet1/18,ethernet1/14,Syslog,2015/12/15 12:09:52,113357,1,4853,8080,0,0,0x0,tcp,alert,"secureinclude.ebaystatic.com/",(9999),auctions,informational,client-to-server"`
 3. Add it as your endpoint address to start streaming data. example
 <img width="1125" alt="image" src="https://user-images.githubusercontent.com/42879226/180902665-01d241b8-520f-4162-bde4-73a6bb189cd1.png">
  
